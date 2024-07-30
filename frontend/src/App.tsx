@@ -16,7 +16,7 @@ export default function App() {
     setCount(count + 1);
 
     (async () => {
-      fetch(`http://localhost:3009/`, {
+      fetch(`${import.meta.env.VITE_API_URL}/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -34,7 +34,7 @@ export default function App() {
   // Check current limit
   useEffect(() => {
     const interval = setInterval(async () => {
-      fetch(`http://localhost:3009/checkLimit`, {
+      fetch(`${import.meta.env.VITE_API_URL}/checkLimit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
