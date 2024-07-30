@@ -1,4 +1,3 @@
-import axios from "axios";
 import Navbar from "./Navbar";
 
 import { useEffect, useState } from "react";
