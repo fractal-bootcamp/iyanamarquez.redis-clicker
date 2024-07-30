@@ -61,9 +61,9 @@ app.post(
   ClerkExpressRequireAuth({}),
   clerkAuthMiddleware,
   async (req, res) => {
-    console.log("Hello post World");
     const userEmail = req.user.emailAddresses[0].emailAddress;
-    const allowed = await rateLimiter(userEmail, 10);
+    const allowed = await rateLimiter(userEmail);
+    console.log(allowed);
     res.send(allowed);
   }
 );
