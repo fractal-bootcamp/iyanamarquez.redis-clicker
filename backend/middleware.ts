@@ -8,8 +8,9 @@ const clerkAuthMiddleware = async (
   next: NextFunction
 ) => {
   const userId = (req as Request & LooseAuthProp).auth?.userId;
+  console.log("got here");
   if (!userId) {
-    return next(new Error("User ID is null"));
+    // return next(new Error("User ID is null"));
   }
   const clerkUser = await clerkClient.users.getUser(userId);
 
@@ -17,13 +18,9 @@ const clerkAuthMiddleware = async (
     return next(new Error("User not found"));
   }
 
-  if (clerkUser) {
-    req.user = clerkUser;
-  } else {
-    return next(new Error("User not found"));
-  }
+  req.user = clerkUser;
 
   next();
 };
 
-export default optionalUser;
+export default clerkAuthMiddleware;
