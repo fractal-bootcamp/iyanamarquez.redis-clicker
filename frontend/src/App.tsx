@@ -16,7 +16,7 @@ export default function App() {
     setCount(count + 1);
 
     (async () => {
-      fetch(`${import.meta.env.VITE_API_URL}/`, {
+      fetch(`${import.meta.env.VITE_API_URL}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
