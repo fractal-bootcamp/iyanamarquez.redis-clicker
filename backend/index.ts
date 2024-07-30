@@ -7,11 +7,13 @@ import "dotenv/config";
 import rateLimiter from "./redis";
 
 const app = express();
+const uri = process.env.URI;
 
-const uri =
-  "redis://default:xs5BQB53SSRKF2z3LN3C1qOxWO39xmJp@redis-16518.c100.us-east-1-4.ec2.cloud.redislabs.com:16518";
-
+if (!uri) {
+  throw new Error("URI environment variable is not defined");
+}
 const { port, hostname, username, password } = new URL(uri);
+
 const redis = new Redis({
   port: Number(port),
   host: hostname,
@@ -42,17 +44,17 @@ app.post(
   ClerkExpressRequireAuth({}),
   clerkAuthMiddleware,
   async (req, res) => {
-    const userEmail = req.user.emailAddresses[0].emailAddress;
+    const userEmail = req?.user?.emailAddresses[0].emailAddress;
 
-    async function currentClicks(userId) {
-      return await redis.get(`${userId}_data`);
+    async function currentClicks(userEmail: string) {
+      return await redis.get(`${userEmail}_data`);
     }
-    if (!(await currentClicks(userEmail))) {
+    if (!(await currentClicks(userEmail || ""))) {
       console.log("user allowed to click");
       res.send(true);
     }
 
-    res.send(await currentClicks(userEmail));
+    res.send(await currentClicks(userEmail || ""));
   }
 );
 
@@ -61,8 +63,8 @@ app.post(
   ClerkExpressRequireAuth({}),
   clerkAuthMiddleware,
   async (req, res) => {
-    const userEmail = req.user.emailAddresses[0].emailAddress;
-    const allowed = await rateLimiter(userEmail);
+    const userEmail = req?.user?.emailAddresses[0].emailAddress;
+    const allowed = await rateLimiter(userEmail || "");
     console.log(allowed);
     res.send(allowed);
   }
