@@ -27,19 +27,23 @@ redis.get("mykey", (err, result) => {
   }
 });
 
-// Or ioredis returns a promise if the last argument isn't a function
-redis.get("mykey").then((result) => {
-  console.log(result); // Prints "value"
-});
+async function rateLimiter(
+  userId: string,
+  limit: number,
+  windowInSeconds: number
+) {
+  const key = `rateLimiter:${userId}`;
+  const current = await redis.incr(key);
 
-// redis.zadd("sortedSet", 1, "one", 2, "dos", 4, "quatro", 3, "three");
-// redis.zrange("sortedSet", 0, 2, "WITHSCORES").then((elements) => {
-//   // ["one", "1", "dos", "2", "three", "3"] as if the command was `redis> ZRANGE sortedSet 0 2 WITHSCORES`
-//   console.log(elements);
-// });
+  if (current === 1) {
+    // Set expiration time for the key if it's the first click
+    await redis.expire(key, windowInSeconds);
+  }
 
-// // All arguments are passed directly to the redis server,
-// // so technically ioredis supports all Redis commands.
-// // The format is: redis[SOME_REDIS_COMMAND_IN_LOWERCASE](ARGUMENTS_ARE_JOINED_INTO_COMMAND_STRING)
-// // so the following statement is equivalent to the CLI: `redis> SET mykey hello EX 10`
-// redis.set("mykey", "hello", "EX", 10);
+  if (current > limit) {
+    return false; // Rate limit exceeded
+  }
+
+  return true; // Allowed
+}
+export default rateLimiter;
