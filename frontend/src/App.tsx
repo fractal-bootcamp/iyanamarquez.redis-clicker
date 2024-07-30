@@ -8,6 +8,7 @@ import { useAuth } from "@clerk/clerk-react";
 export default function App() {
   const { getToken } = useAuth();
 
+  const [limit, setLimit] = useState(0);
   const [count, setCount] = useState(0);
   const [data, setData] = useState(true);
 
@@ -32,11 +33,26 @@ export default function App() {
       });
     })();
   }
+  // Check current limit
   useEffect(() => {
-    handleClick();
-    const interval = setInterval(handleClick, 5000); // Fetch every 5 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [data]);
+    const interval = setInterval(async () => {
+      fetch(`http://localhost:3009/checkLimit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await getToken()}`
+        },
+      }).then(res => res.json()).then((data) => {
+        if (data) {
+          setData(true);
+        }
+      }).catch((error) => {
+        console.log(error);
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -46,7 +62,7 @@ export default function App() {
       <section className="flex justify-center items-center h-96 flex-col">
         <p className="text-2xl"> Count: {count}</p>
 
-
+        {/* <p>Limit: {limit}</p> */}
         <button disabled={!data} onClick={handleClick} className="bg-blue-300 text-black px-4 py-2 rounded-md mt-10">Click Me</button>
       </section>
     </>

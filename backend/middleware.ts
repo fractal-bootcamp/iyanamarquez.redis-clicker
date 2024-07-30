@@ -8,9 +8,8 @@ const clerkAuthMiddleware = async (
   next: NextFunction
 ) => {
   const userId = (req as Request & LooseAuthProp).auth?.userId;
-  console.log("got here");
   if (!userId) {
-    // return next(new Error("User ID is null"));
+    return next(new Error("User ID is null"));
   }
   const clerkUser = await clerkClient.users.getUser(userId);
 

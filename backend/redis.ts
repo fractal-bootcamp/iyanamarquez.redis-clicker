@@ -16,34 +16,20 @@ const redis = new Redis({
   db: 0,
 });
 
-redis.set("mykey", "bruh"); // Returns a promise which resolves to "OK" when the command succeeds.
-redis.set("user1", "clicked something");
-// ioredis supports the node.js callback style
-redis.get("mykey", (err, result) => {
-  if (err) {
-    console.error(err);
+async function rateLimiter(userId, limit) {
+  // Redis hash key
+  const hashKey = `${userId}_data`;
+  const clicks = Number(await redis.get(hashKey));
+  if (clicks) {
+    redis.set(hashKey, clicks + 1, "EX", limit);
+    if (clicks > limit) {
+      return false; // Not allowed
+    }
+    return true;
   } else {
-    console.log(result); // Prints "value"
+    redis.set(hashKey, 1, "EX", limit);
+    return true; // Allowed
   }
-});
-
-async function rateLimiter(
-  userId: string,
-  limit: number,
-  windowInSeconds: number
-) {
-  const key = `rateLimiter:${userId}`;
-  const current = await redis.incr(key);
-
-  if (current === 1) {
-    // Set expiration time for the key if it's the first click
-    await redis.expire(key, windowInSeconds);
-  }
-
-  if (current > limit) {
-    return false; // Rate limit exceeded
-  }
-
-  return true; // Allowed
 }
+
 export default rateLimiter;
