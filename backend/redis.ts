@@ -16,19 +16,36 @@ const redis = new Redis({
   db: 0,
 });
 
-async function rateLimiter(userId, limit) {
-  // Redis hash key
-  const hashKey = `${userId}_data`;
-  const clicks = Number(await redis.get(hashKey));
-  if (clicks) {
-    redis.set(hashKey, clicks + 1, "EX", limit);
-    if (clicks > limit) {
-      return false; // Not allowed
-    }
-    return true;
+// async function rateLimiter(userId, limit) {
+//   // Redis hash key
+//   const clickLimit = 7;
+//   const hashKey = `${userId}_data`;
+//   const clicks = Number(await redis.get(hashKey));
+//   if (clicks) {
+//     redis.set(hashKey, clicks + 1, "EX", limit);
+//     if (clicks > clickLimit) {
+//       return false; // Not allowed
+//     }
+//     return true;
+//   } else {
+//     redis.set(hashKey, 1, "EX", limit);
+//     return true; // Allowed
+//   }
+// }
+
+async function rateLimiter(userEmail: string) {
+  const currentLength = await redis.llen(`myqueue${userEmail}`);
+  console.log("currentLength", currentLength);
+  const additionalTime = currentLength;
+  if (currentLength > 5) {
+    console.log("Max click limit reached. Please try again later.");
+    return false;
   } else {
-    redis.set(hashKey, 1, "EX", limit);
-    return true; // Allowed
+    // add a click
+    redis.rpush(`myqueue${userEmail}`, "clickdata");
+    redis.expire(`myqueue${userEmail}`, 5 + additionalTime);
+    console.log("Click added");
+    return true;
   }
 }
 
