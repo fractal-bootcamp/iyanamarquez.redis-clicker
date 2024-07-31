@@ -23,17 +23,40 @@ const io = new Server(server, {
   },
 });
 
+const gameData = [
+  {
+    lobby1: {
+      board: Array(9).fill(null),
+      xIsNext: true,
+      winState: null,
+      player1: null,
+      player2: null,
+    },
+  },
+  {
+    lobby2: {
+      board: Array(9).fill(null),
+      xIsNext: true,
+      winState: null,
+      player1: null,
+      player2: null,
+    },
+  },
+];
+
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("New client connected");
 
-  socket.on("test", () => {
-    console.log("test");
-    io.emit("test2");
+  // Tictactoe Game Logic
+  socket.on("gamedata", (value) => {
+    const boardData = value;
+    // put gamedata into lobby1
+    gameData[0].lobby1.board = boardData;
+    console.log("trackedVariable", gameData);
+    socket.emit("gamedata", gameData[0].lobby1);
   });
-
-  // Handle disconnection
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    console.log("Client disconnected");
   });
 });
 
@@ -52,10 +75,6 @@ if (!uri) {
 
 app.get("/", async (req, res) => {
   console.log("Hello World");
-  // await client.set("key", "value");
-  // const value = await client.get("key");
-  // await client.disconnect();
-  console.log("ermhello");
 
   res.send("hello");
 });
@@ -77,6 +96,9 @@ app.post(
   clerkAuthMiddleware,
   async (req, res) => {
     const userEmail = req?.user?.emailAddresses[0].emailAddress;
+    const data = req.body;
+    io.emit("test", data);
+    console.log(data);
   }
 );
 
