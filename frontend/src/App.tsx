@@ -16,7 +16,7 @@ export default function App() {
       <header>
         <Navbar />
       </header>
-      <section className="flex justify-center items-center h-96 flex-col">
+      <section className="flex justify-center items-center flex-col">
         <Lobby />
         game here:
         <br></br>
