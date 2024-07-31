@@ -4,30 +4,51 @@ import { Redis } from "ioredis";
 import clerkAuthMiddleware from "./middleware";
 import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 import "dotenv/config";
-import rateLimiter from "./redis";
+import calculateWinner from "./game";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 const app = express();
 const uri = process.env.URI;
-
-if (!uri) {
-  throw new Error("URI environment variable is not defined");
-}
-const { port, hostname, username, password } = new URL(uri);
-
-const redis = new Redis({
-  port: Number(port),
-  host: hostname,
-  username,
-  password,
-  db: 0,
-});
-
 app.use(cors());
 
 app.use(express.json());
 const PORT = 3009;
 
-app.use(express.json());
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
+
+  socket.on("test", () => {
+    console.log("test");
+    io.emit("test2");
+  });
+
+  // Handle disconnection
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
+  });
+});
+
+if (!uri) {
+  throw new Error("URI environment variable is not defined");
+}
+// const { port, hostname, username, password } = new URL(uri);
+
+// const redis = new Redis({
+//   port: Number(port),
+//   host: hostname,
+//   username,
+//   password,
+//   db: 0,
+// });
 
 app.get("/", async (req, res) => {
   console.log("Hello World");
@@ -40,21 +61,13 @@ app.get("/", async (req, res) => {
 });
 
 app.post(
-  "/checkLimit",
+  "/checkGame",
   ClerkExpressRequireAuth({}),
   clerkAuthMiddleware,
   async (req, res) => {
     const userEmail = req?.user?.emailAddresses[0].emailAddress;
-
-    async function currentClicks(userEmail: string) {
-      return await redis.get(`${userEmail}_data`);
-    }
-    if (!(await currentClicks(userEmail || ""))) {
-      console.log("user allowed to click");
-      res.send(true);
-    }
-
-    res.send(await currentClicks(userEmail || ""));
+    const winner = calculateWinner(req.body.squares);
+    res.send(winner);
   }
 );
 
@@ -64,12 +77,13 @@ app.post(
   clerkAuthMiddleware,
   async (req, res) => {
     const userEmail = req?.user?.emailAddresses[0].emailAddress;
-    const allowed = await rateLimiter(userEmail || "");
-    console.log(allowed);
-    res.send(allowed);
   }
 );
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+io.engine.on("connection_error", (err) => {
+  console.error("Socket.IO connection error:", err);
 });
