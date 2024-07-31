@@ -3,30 +3,42 @@ import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:3009');
 
+const ConnectionManager = () => {
+    function connect() {
+        socket.connect();
+    }
+
+    function disconnect() {
+        socket.disconnect();
+    }
+
+    return (
+        <>
+            <button onClick={connect}>Connect</button>
+            <button onClick={disconnect}>Disconnect</button>
+        </>
+    );
+}
+
 const Tictactoe = () => {
     const [squares, setSquares] = useState(Array(9).fill(null));
+    const [board, setBoard] = useState(Array(9).fill(null));
     const [winner, setWinner] = useState(null);
     const [currPlayer, setCurrPlayer] = useState("X");
-    const [test, setTest] = useState(33);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
-        socket.connect();
-
-
         e.preventDefault();
-        socket.on('test', (test) => {
-            console.log('test', test)
-        })
-        socket.emit('test', { test })
-
-
-        if (winner) return;
         const nextSquares = squares.slice();
         if (nextSquares[index]) return;
         nextSquares[index] = currPlayer;
         setSquares(nextSquares);
-        setCurrPlayer(currPlayer === "X" ? "O" : "X");
-        // fetch call to server to save the move
+
+
+        // if (winner) return;
+        // const nextSquares = squares.slice();
+
+        // setCurrPlayer(currPlayer === "X" ? "O" : "X");
+        // // fetch call to server to save the move
     }
     const calculateWinner = (squares: any) => {
         const lines = [
@@ -49,13 +61,24 @@ const Tictactoe = () => {
     }
 
     useEffect(() => {
-        socket.on("message", (message) => {
-            console.log('message', message)
-        })
+        console.log('erm hello')
+        socket.connect()
+        socket.emit('gamedata', { squares })
+
+        socket.on("gamedata", (data) => {
+            setBoard(data.board.squares);
+            console.log('squares', data)
+        });
+
         const winner = calculateWinner(squares);
         if (winner) {
             setWinner(winner);
         }
+
+        // Cleanup listener on unmount
+        return () => {
+            socket.off("message");
+        };
     }, [squares]);
 
     const resetGame = () => {
@@ -63,14 +86,12 @@ const Tictactoe = () => {
         setWinner(null);
         setCurrPlayer("X");
     }
-
-    console.log(squares)
     return (
         <div>
             <h1>Tictactoe</h1>
             <h1 className="text-center text-white text-2xl mb-4">Winner is {winner}</h1>
             <div className="grid grid-cols-3">
-                {squares.map((square, index) => (
+                {board.map((square, index) => (
                     <button key={index} className="border border-white w-20 h-20 text-white text-6xl" onClick={(e) => handleClick(e, index)}>
                         {square}
                     </button>
